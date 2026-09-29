@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { useMl } from "@/components/MlProvider";
+import { Disclosure } from "@/components/Disclosure";
 import { StarRating } from "@/components/StarRating";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -106,7 +107,7 @@ export default function Rate() {
   return (
     <AppShell
       title="Rate films"
-      description="Your ratings are the only input the recommender has about you. They map this account onto the MovieLens 100K user space and drive the content-affinity layer."
+      description="Tell Ensemble what you love. A few honest ratings are all it takes to unlock your Top-K."
       actions={
         <Button asChild className="gap-2">
           <Link to="/recommendations">
@@ -126,8 +127,8 @@ export default function Rate() {
                 <div>
                   <h2 className="text-sm font-semibold">Starter set</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Popular films across {Math.min(genres.length, 18)} genres — enough to map your
-                    taste without rating the whole catalogue.
+                    A crowd-pleasing mix — enough to map your taste without rating the whole
+                    catalogue.
                   </p>
                 </div>
                 <Badge variant="outline" className="border-border/70 tabular-nums">
@@ -227,20 +228,31 @@ export default function Rate() {
             <div className="rounded-xl border border-border/70 bg-card/60 p-5">
               <div className="flex items-center gap-2 text-primary">
                 <Target className="size-4" />
-                <h2 className="text-sm font-semibold text-foreground">Persona mapping</h2>
+                <h2 className="text-sm font-semibold text-foreground">Taste progress</h2>
               </div>
               <Progress value={personaProgress} className="mt-4 h-1.5" />
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
                 {activeProfile?.persona
-                  ? `Matched to MovieLens user ${activeProfile.persona.userId} — cosine ${activeProfile.persona.similarity.toFixed(2)} over ${activeProfile.persona.sharedMovies} co-rated films.`
-                  : `A persona match needs at least ${PERSONA_MIN_SHARED} films you and one MovieLens user both rated. Below that, the recommender uses a labelled fallback instead of a model prediction.`}
+                  ? `Taste profile locked in — you are matched and ready for your Top-K.`
+                  : `Rate a few more films to lock in your taste profile and unlock model-ranked picks.`}
               </p>
-              {activeProfile && !activeProfile.persona && activeProfile.personaCandidates.length > 0 ? (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Closest candidate so far: user {activeProfile.personaCandidates[0].userId} with{" "}
-                  {activeProfile.personaCandidates[0].sharedMovies} shared films.
+              <Disclosure
+                tone="ghost"
+                className="mt-3"
+                title="How the persona match works"
+              >
+                <p className="text-[11px] leading-5 text-muted-foreground">
+                  {activeProfile?.persona
+                    ? `Matched to MovieLens user ${activeProfile.persona.userId} — cosine ${activeProfile.persona.similarity.toFixed(2)} over ${activeProfile.persona.sharedMovies} co-rated films.`
+                    : `A persona match needs at least ${PERSONA_MIN_SHARED} films you and one MovieLens user both rated. Below that, the recommender uses a labelled fallback instead of a model prediction.`}
                 </p>
-              ) : null}
+                {activeProfile && !activeProfile.persona && activeProfile.personaCandidates.length > 0 ? (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Closest candidate so far: user {activeProfile.personaCandidates[0].userId} with{" "}
+                    {activeProfile.personaCandidates[0].sharedMovies} shared films.
+                  </p>
+                ) : null}
+              </Disclosure>
             </div>
 
             {activeProfile && activeProfile.count > 0 ? (
@@ -257,6 +269,17 @@ export default function Rate() {
                   Your mean rating is {activeProfile.meanRating.toFixed(2)} against the dataset mean of{" "}
                   {activeProfile.globalMean.toFixed(2)}.
                 </p>
+                <Disclosure
+                  tone="ghost"
+                  className="mt-1"
+                  title="What these signals mean"
+                >
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    The lift column compares your average rating in a genre against the dataset
+                    average. Positive lift means you rate that genre above the crowd; it feeds the
+                    optional content-affinity layer, not the core model.
+                  </p>
+                </Disclosure>
                 <ul className="mt-4 space-y-2.5">
                   {activeProfile.genreAffinity.slice(0, 6).map((entry) => (
                     <li key={entry.genre} className="flex items-center justify-between gap-3 text-xs">

@@ -1,5 +1,6 @@
 import { MoviePoster } from "@/components/MoviePoster";
 import { useMl } from "@/components/MlProvider";
+import { Disclosure } from "@/components/Disclosure";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -7,15 +8,16 @@ import { PAPER, PAPER_STANDALONE } from "@/ml/reference";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Boxes,
-  Database,
-  GitBranch,
+  ChevronDown,
+  Film,
   LineChart,
   ShieldCheck,
   Sparkles,
   Star,
+  Ticket,
   Workflow,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 const MODEL_LABELS: Record<string, string> = {
@@ -40,6 +42,11 @@ export default function Landing() {
 
   const showcase = (meta?.movies ?? []).filter((m) => m.title.length < 26).slice(0, 6);
   const primaryCta = isAuthenticated ? "/dashboard" : "/auth?returnTo=%2Frate";
+  const [walkthrough, setWalkthrough] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState<null | "method" | "results" | "integrity">(null);
+
+  const toggle = (key: "method" | "results" | "integrity") =>
+    setDetailsOpen((prev) => (prev === key ? null : key));
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,15 +59,27 @@ export default function Landing() {
             <span className="font-display text-xl leading-none">Ensemble</span>
           </Link>
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-            <a className="transition-colors hover:text-foreground" href="#method">
+            <button
+              type="button"
+              className="transition-colors hover:text-foreground"
+              onClick={() => toggle("method")}
+            >
               Method
-            </a>
-            <a className="transition-colors hover:text-foreground" href="#results">
+            </button>
+            <button
+              type="button"
+              className="transition-colors hover:text-foreground"
+              onClick={() => toggle("results")}
+            >
               Results
-            </a>
-            <a className="transition-colors hover:text-foreground" href="#integrity">
+            </button>
+            <button
+              type="button"
+              className="transition-colors hover:text-foreground"
+              onClick={() => toggle("integrity")}
+            >
               Integrity
-            </a>
+            </button>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
@@ -76,7 +95,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero — the movie experience comes first */}
       <section className="stage-glow relative overflow-hidden border-b border-border/60">
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
           <motion.div
@@ -86,36 +105,69 @@ export default function Landing() {
             className="flex flex-col justify-center"
           >
             <Badge variant="outline" className="w-fit border-primary/40 text-primary">
-              Reproduction study · JATIT Vol. 101 No. 18
+              <Ticket className="mr-1.5 size-3" />
+              Your private screening room
             </Badge>
             <h1 className="mt-5 font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-              Six base learners.
+              Rate a few films.
               <br />
-              One meta-learner.
+              <span className="text-primary">Get your next</span>
               <br />
-              <span className="text-primary">Every number measured here.</span>
+              five favourites.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-              A working reconstruction of Sharma &amp; Dutta's stacking ensemble for movie
-              recommendation. Rate a handful of films, get a Top-K list ranked by a real
-              KNN + XGBoost + Gradient Boosting → Linear Regression stack — with the published
-              reference numbers kept strictly separate from ours.
+              Ensemble turns a handful of star ratings into a personal Top-K list — ranked by
+              machine-learnt taste, tuned for accuracy or diversity, and explained with data that
+              actually exists. No ads, no noise, just your next watch.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="gap-2">
                 <Link to={primaryCta}>
-                  Build my Top-K
+                  <Star className="size-4" />
+                  Start rating
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href="#method">See the architecture</a>
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2"
+                onClick={() => setWalkthrough((prev) => !prev)}
+                aria-expanded={walkthrough}
+              >
+                <Film className="size-4" />
+                How it works
+                <ChevronDown
+                  className={`size-3.5 transition-transform ${walkthrough ? "rotate-180" : ""}`}
+                />
               </Button>
             </div>
+            {walkthrough ? (
+              <motion.ol
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="mt-6 max-w-xl space-y-2.5 rounded-xl border border-border/70 bg-card/60 p-5 text-sm"
+              >
+                {[
+                  "Rate the starter films or search any of the 1,682 titles.",
+                  "Your ratings map you to the closest MovieLens 100K taste profile.",
+                  "Pick a list size and an accuracy-or-diversity ranking.",
+                  "Your Top-K arrives with a predicted rating for every film.",
+                ].map((line, index) => (
+                  <li key={line} className="flex gap-2.5 text-muted-foreground">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
+                      {index + 1}
+                    </span>
+                    {line}
+                  </li>
+                ))}
+              </motion.ol>
+            ) : null}
             <dl className="mt-9 grid max-w-lg grid-cols-3 gap-4 border-t border-border/60 pt-5">
-              <Stat label="Ratings" value={meta ? meta.audit.rows.toLocaleString() : "100,000"} />
-              <Stat label="Users" value={meta ? String(meta.audit.users) : "943"} />
-              <Stat label="Films" value={meta ? String(meta.audit.movies) : "1,682"} />
+              <Stat label="Films" value={meta ? meta.audit.movies.toLocaleString() : "1,682"} />
+              <Stat label="Genres" value="19" />
+              <Stat label="Your list" value="Top-K" />
             </dl>
           </motion.div>
 
@@ -141,176 +193,33 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Method / architecture */}
-      <section id="method" className="border-b border-border/60">
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <motion.div {...fadeUp}>
-            <Badge variant="outline" className="border-border/70">
-              <Workflow className="mr-1.5 size-3" />
-              Two-level stacking
-            </Badge>
-            <h2 className="mt-4 max-w-2xl font-display text-3xl tracking-tight sm:text-4xl">
-              The pipeline, exactly as the paper describes it
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              User, movie and rating files are merged into one table. Categorical ids are encoded
-              numerically and the release year is extracted, giving the paper's four named columns.
-              Base learners produce predictions that become the meta-learner's features.
-            </p>
-          </motion.div>
-
-          <motion.div {...fadeUp} className="mt-10 grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr]">
-            <Stage
-              icon={<Database className="size-4" />}
-              title="Merged dataset"
-              items={["user_id → encoded", "movie_id → encoded", "year (imputed)", "rating → target"]}
-              note="Demographics are merged but excluded from modelling, as the paper states."
-            />
-            <Arrow />
-            <Stage
-              icon={<Boxes className="size-4" />}
-              title="Level 1 · base learners"
-              items={["KNN regressor", "XGBoost regressor", "Gradient Boosting"]}
-              note="Trained per fold so the meta learner never sees in-sample predictions."
-            />
-            <Arrow />
-            <Stage
-              icon={<GitBranch className="size-4" />}
-              title="Level 2 · meta learner"
-              items={["Linear Regression", "on out-of-fold predictions"]}
-              note="Base learners are then refit on the full training split for serving."
-            />
-          </motion.div>
-
-          <motion.div {...fadeUp} className="mt-4 grid gap-4 sm:grid-cols-3">
-            <MiniCard
-              title="No stacking leakage"
-              body="Five-fold cross-validation produces out-of-fold base predictions. The meta-learner is trained on those, never on in-sample output."
-            />
-            <MiniCard
-              title="Six standalone baselines"
-              body="Linear Regression, KNN, Random Forest, AdaBoost, Gradient Boosting and XGBoost are each evaluated independently first."
-            />
-            <MiniCard
-              title="Seven stacking configurations"
-              body="Every meta-learner combination from the paper is re-run here and compared on the same held-out split."
-            />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Results */}
-      <section id="results" className="border-b border-border/60 bg-card/40">
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <motion.div {...fadeUp} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Badge variant="outline" className="border-border/70">
-                <LineChart className="mr-1.5 size-3" />
-                Reference vs reproduction
-              </Badge>
-              <h2 className="mt-4 font-display text-3xl tracking-tight sm:text-4xl">
-                Published reference results
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                These are the paper's reported standalone RMSE values. They are shown as reference
-                only and are never mixed into our metric tables.
-              </p>
-            </div>
-            <Button asChild variant="outline" size="sm" className="gap-2">
-              <Link to={isAuthenticated ? "/analytics" : "/auth?returnTo=%2Fanalytics"}>
-                Run the full experiment
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          </motion.div>
-
-          <motion.div {...fadeUp} className="mt-8 overflow-hidden rounded-xl border border-border/70">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Model</th>
-                  <th className="px-4 py-3 font-medium">Paper RMSE</th>
-                  <th className="px-4 py-3 font-medium">
-                    {result ? "Our reproduction RMSE" : "Our reproduction"}
-                  </th>
-                  <th className="px-4 py-3 font-medium">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(PAPER_STANDALONE).map(([key, reference]) => {
-                  const ours = result?.standalone.find((s) => s.model === key);
-                  return (
-                    <tr key={key} className="border-t border-border/60">
-                      <td className="px-4 py-3 font-medium">{MODEL_LABELS[key] ?? key}</td>
-                      <td className="px-4 py-3 tabular-nums">{reference.rmse.toFixed(2)}</td>
-                      <td className="px-4 py-3 tabular-nums">
-                        {ours ? ours.rmse.toFixed(4) : <span className="text-muted-foreground">computed on run</span>}
-                      </td>
-                      <td className="px-4 py-3 tabular-nums">
-                        {ours ? (
-                          <span className={ours.deltaVsReference && ours.deltaVsReference > 0 ? "text-chart-3" : "text-chart-5"}>
-                            {ours.deltaVsReference && ours.deltaVsReference >= 0 ? "+" : ""}
-                            {ours.deltaVsReference?.toFixed(4)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </motion.div>
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            Two of six positions reproduce closely and four do not — the analytics page explains the
-            gap rather than hiding it. The full-dataset run trains all six models and seven stacking
-            configurations in roughly 50 seconds, on your machine, in a web worker.
+      {/* Deep-dive disclosures: research content stays hidden until clicked */}
+      <section className="border-b border-border/60">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-12 sm:px-6">
+          <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Behind the curtain
           </p>
-        </div>
-      </section>
-
-      {/* Integrity */}
-      <section id="integrity" className="border-b border-border/60">
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <motion.div {...fadeUp}>
-            <Badge variant="outline" className="border-border/70">
-              <ShieldCheck className="mr-1.5 size-3" />
-              Research integrity
-            </Badge>
-            <h2 className="mt-4 font-display text-3xl tracking-tight sm:text-4xl">
-              What this project will not do
-            </h2>
-          </motion.div>
-          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "No borrowed numbers",
-                body: "Published RMSE never appears as our result. Reference values live in one read-only file and are displayed under a separate heading.",
-              },
-              {
-                title: "No invented explanations",
-                body: "Every recommendation explanation is assembled from data that exists: base-learner outputs, persona match strength, the account's own ratings, and MovieLens support counts.",
-              },
-              {
-                title: "Deviations documented",
-                body: "Seeds, splits, fold counts and hyperparameters are unpublished by the paper, so ours are recorded per run and listed with the result.",
-              },
-              {
-                title: "Leakage audited",
-                body: "Test statistics never enter preprocessing, supervised features are refit inside each fold, and the meta learner only ever sees out-of-fold predictions.",
-              },
-            ].map((card) => (
-              <motion.div
-                key={card.title}
-                {...fadeUp}
-                className="rounded-xl border border-border/70 bg-card/60 p-5"
-              >
-                <h3 className="text-sm font-semibold">{card.title}</h3>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">{card.body}</p>
-              </motion.div>
-            ))}
-          </div>
+          <Disclosure
+            tone="plain"
+            title="The method behind the picks"
+            hint="Two-level stacking, exactly as the paper describes it — KNN + XGBoost + Gradient Boosting feeding a Linear Regression meta-learner."
+          >
+            <MethodDetails />
+          </Disclosure>
+          <Disclosure
+            tone="plain"
+            title="Published reference vs our reproduction"
+            hint="The paper's reported RMSE values, shown strictly as reference — never presented as our results."
+          >
+            <ResultsDetails result={result} />
+          </Disclosure>
+          <Disclosure
+            tone="plain"
+            title="Research integrity commitments"
+            hint="What this project will not do with numbers it did not measure."
+          >
+            <IntegrityDetails />
+          </Disclosure>
         </div>
       </section>
 
@@ -343,8 +252,8 @@ export default function Landing() {
       <footer className="border-t border-border/60">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-8 text-xs text-muted-foreground sm:px-6">
           <p className="max-w-3xl leading-5">
-            Paper reproduced: {PAPER.authors}, “{PAPER.title}”, {PAPER.venue}, {PAPER.volume},{" "}
-            {PAPER.date}. Dataset: {PAPER.dataset}.
+            Recommendation engine reproduced from: {PAPER.authors}, “{PAPER.title}”, {PAPER.venue},{" "}
+            {PAPER.volume}, {PAPER.date}. Dataset: {PAPER.dataset}.
           </p>
           <p>
             Built with React, Vite and Convex. The stacking ensemble is implemented from scratch in
@@ -365,49 +274,167 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Stage({
-  icon,
-  title,
-  items,
-  note,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  items: string[];
-  note: string;
-}) {
+function MethodDetails() {
   return (
-    <div className="rounded-xl border border-border/70 bg-card/60 p-5">
-      <div className="flex items-center gap-2 text-primary">{icon}</div>
-      <h3 className="mt-3 text-sm font-semibold">{title}</h3>
-      <ul className="mt-3 space-y-1.5">
-        {items.map((item) => (
-          <li key={item} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="size-1 rounded-full bg-primary/70" />
-            {item}
-          </li>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-primary">
+        <Workflow className="size-4" />
+        <h3 className="text-sm font-semibold">Two-level stacking</h3>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">
+        User, movie and rating files are merged into one table. Categorical ids are encoded
+        numerically and the release year is extracted, giving the paper's four named columns. Base
+        learners produce predictions that become the meta-learner's features.
+      </p>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {[
+          {
+            title: "Merged dataset",
+            items: ["user_id → encoded", "movie_id → encoded", "year (imputed)", "rating → target"],
+            note: "Demographics are merged but excluded from modelling, as the paper states.",
+          },
+          {
+            title: "Level 1 · base learners",
+            items: ["KNN regressor", "XGBoost regressor", "Gradient Boosting"],
+            note: "Trained per fold so the meta learner never sees in-sample predictions.",
+          },
+          {
+            title: "Level 2 · meta learner",
+            items: ["Linear Regression", "on out-of-fold predictions"],
+            note: "Base learners are then refit on the full training split for serving.",
+          },
+        ].map((stage) => (
+          <div key={stage.title} className="rounded-xl border border-border/70 bg-background/40 p-4">
+            <h4 className="text-sm font-semibold">{stage.title}</h4>
+            <ul className="mt-3 space-y-1.5">
+              {stage.items.map((item) => (
+                <li key={item} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="size-1 rounded-full bg-primary/70" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 border-t border-border/60 pt-3 text-[11px] leading-4 text-muted-foreground/80">
+              {stage.note}
+            </p>
+          </div>
         ))}
-      </ul>
-      <p className="mt-4 border-t border-border/60 pt-3 text-[11px] leading-4 text-muted-foreground/80">
-        {note}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          {
+            title: "No stacking leakage",
+            body: "Five-fold cross-validation produces out-of-fold base predictions. The meta-learner is trained on those, never on in-sample output.",
+          },
+          {
+            title: "Six standalone baselines",
+            body: "Linear Regression, KNN, Random Forest, AdaBoost, Gradient Boosting and XGBoost are each evaluated independently first.",
+          },
+          {
+            title: "Seven stacking configurations",
+            body: "Every meta-learner combination from the paper is re-run here and compared on the same held-out split.",
+          },
+        ].map((card) => (
+          <div key={card.title} className="rounded-xl border border-border/70 bg-background/40 p-4">
+            <h4 className="text-sm font-semibold">{card.title}</h4>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{card.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultsDetails({ result }: { result: ReturnType<typeof useMl>["result"] }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-primary">
+        <LineChart className="size-4" />
+        <h3 className="text-sm font-semibold">Reference vs reproduction</h3>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">
+        These are the paper's reported standalone RMSE values. They are shown as reference only and
+        are never mixed into our metric tables.
+      </p>
+      <div className="overflow-hidden rounded-xl border border-border/70">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium">Model</th>
+              <th className="px-4 py-3 font-medium">Paper RMSE</th>
+              <th className="px-4 py-3 font-medium">
+                {result ? "Our reproduction RMSE" : "Our reproduction"}
+              </th>
+              <th className="px-4 py-3 font-medium">Difference</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(PAPER_STANDALONE).map(([key, reference]) => {
+              const ours = result?.standalone.find((s) => s.model === key);
+              return (
+                <tr key={key} className="border-t border-border/60">
+                  <td className="px-4 py-3 font-medium">{MODEL_LABELS[key] ?? key}</td>
+                  <td className="px-4 py-3 tabular-nums">{reference.rmse.toFixed(2)}</td>
+                  <td className="px-4 py-3 tabular-nums">
+                    {ours ? ours.rmse.toFixed(4) : <span className="text-muted-foreground">computed on run</span>}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums">
+                    {ours ? (
+                      <span className={ours.deltaVsReference && ours.deltaVsReference > 0 ? "text-chart-3" : "text-chart-5"}>
+                        {ours.deltaVsReference && ours.deltaVsReference >= 0 ? "+" : ""}
+                        {ours.deltaVsReference?.toFixed(4)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">
+        Two of six positions reproduce closely and four do not — the analytics page explains the gap
+        rather than hiding it. The full-dataset run trains all six models and seven stacking
+        configurations in roughly 50 seconds, on your machine, in a web worker.
       </p>
     </div>
   );
 }
 
-function Arrow() {
+function IntegrityDetails() {
   return (
-    <div className="hidden items-center justify-center lg:flex">
-      <ArrowRight className="size-5 text-primary/60" />
-    </div>
-  );
-}
-
-function MiniCard({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-xl border border-border/70 bg-card/40 p-5">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{body}</p>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-primary">
+        <ShieldCheck className="size-4" />
+        <h3 className="text-sm font-semibold">What this project will not do</h3>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[
+          {
+            title: "No borrowed numbers",
+            body: "Published RMSE never appears as our result. Reference values live in one read-only file and are displayed under a separate heading.",
+          },
+          {
+            title: "No invented explanations",
+            body: "Every recommendation explanation is assembled from data that exists: base-learner outputs, persona match strength, the account's own ratings, and MovieLens support counts.",
+          },
+          {
+            title: "Deviations documented",
+            body: "Seeds, splits, fold counts and hyperparameters are unpublished by the paper, so ours are recorded per run and listed with the result.",
+          },
+          {
+            title: "Leakage audited",
+            body: "Test statistics never enter preprocessing, supervised features are refit inside each fold, and the meta learner only ever sees out-of-fold predictions.",
+          },
+        ].map((card) => (
+          <div key={card.title} className="rounded-xl border border-border/70 bg-background/40 p-4">
+            <h4 className="text-sm font-semibold">{card.title}</h4>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{card.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

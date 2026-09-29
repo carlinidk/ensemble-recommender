@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { useMl } from "@/components/MlProvider";
+import { Disclosure } from "@/components/Disclosure";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -14,7 +15,6 @@ import {
   AlertTriangle,
   BarChart3,
   Brain,
-  Info,
   Loader2,
   RefreshCw,
   Shuffle,
@@ -112,7 +112,7 @@ export default function Recommendations() {
   return (
     <AppShell
       title="Top-K picks"
-      description="Ranked by the paper's stacking ensemble: KNN + XGBoost + Gradient Boosting feed a Linear Regression meta-learner. Accuracy and diversity modes re-rank the same predictions differently."
+      description="Your personal shortlist, ranked by a machine-learnt model of taste. Accuracy and diversity modes re-rank the same predictions differently."
       actions={
         <Button variant="outline" className="gap-2" onClick={() => run(config)} disabled={busy}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
@@ -271,9 +271,11 @@ export default function Recommendations() {
           </div>
 
           <aside className="flex flex-col gap-4 xl:sticky xl:top-6 xl:self-start">
-            <div className="rounded-xl border border-border/70 bg-card/60 p-5">
-              <h2 className="text-sm font-semibold">How this list was built</h2>
-              <ul className="mt-3 space-y-2.5 text-xs">
+            <Disclosure
+              title="How this list was built"
+              hint="Persona match, exclusions and list-level statistics — hidden by default."
+            >
+              <ul className="space-y-2.5 text-xs">
                 <Diagnostic
                   label="Persona"
                   value={
@@ -326,19 +328,18 @@ export default function Recommendations() {
               <p className="mt-4 border-t border-border/60 pt-3 text-[11px] leading-4 text-muted-foreground">
                 {output.diagnostics.rationale}
               </p>
-            </div>
+            </Disclosure>
 
-            <div className="rounded-xl border border-border/70 bg-card/60 p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Info className="size-3.5" />
-                <h2 className="text-sm font-semibold text-foreground">Reading the numbers</h2>
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            <Disclosure
+              title="Reading the numbers"
+              hint="What the predicted rating and spread actually mean."
+            >
+              <p className="text-[11px] leading-5 text-muted-foreground">
                 Predicted rating is the meta-learner's output. Spread is the disagreement between
                 KNN, XGBoost and Gradient Boosting — it is not a probability that you will like the
                 film. Support counts come from MovieLens 100K and describe the dataset, not you.
               </p>
-            </div>
+            </Disclosure>
           </aside>
         </div>
       )}
@@ -395,51 +396,56 @@ function RecommendationCard({ rec, index }: { rec: Recommendation; index: number
           </div>
 
           {rec.basePredictions.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {rec.basePredictions.map((base) => (
-                <span
-                  key={base.name}
-                  className="rounded-md border border-border/70 bg-background/40 px-2 py-1 text-[11px] tabular-nums"
-                >
-                  {base.name} <span className="text-muted-foreground">{base.value.toFixed(2)}</span>
+            <Disclosure
+              tone="ghost"
+              className="mt-3"
+              title={`Why this pick? (${rec.basePredictions.length} model signals)`}
+            >
+              <div className="flex flex-wrap gap-2">
+                {rec.basePredictions.map((base) => (
+                  <span
+                    key={base.name}
+                    className="rounded-md border border-border/70 bg-background/40 px-2 py-1 text-[11px] tabular-nums"
+                  >
+                    {base.name} <span className="text-muted-foreground">{base.value.toFixed(2)}</span>
+                  </span>
+                ))}
+                <span className="rounded-md border border-border/70 bg-background/40 px-2 py-1 text-[11px]">
+                  spread ±{rec.confidence.spread.toFixed(2)} · {rec.confidence.label}
                 </span>
-              ))}
-              <span className="rounded-md border border-border/70 bg-background/40 px-2 py-1 text-[11px]">
-                spread ±{rec.confidence.spread.toFixed(2)} · {rec.confidence.label}
-              </span>
-              {rec.metaRecipe ? (
-                <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary">
-                  {rec.metaRecipe}
-                </span>
-              ) : null}
-            </div>
+                {rec.metaRecipe ? (
+                  <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary">
+                    {rec.metaRecipe}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-3 space-y-1.5 border-t border-border/60 pt-3">
+                {rec.explanation.modelDerived ? (
+                  <p className="flex gap-2 text-xs leading-5 text-foreground/90">
+                    <Brain className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                    <span>{rec.explanation.modelDerived}</span>
+                  </p>
+                ) : null}
+                {rec.explanation.evidence.map((line) => (
+                  <p key={line} className="flex gap-2 text-xs leading-5 text-muted-foreground">
+                    <span className="mt-1.5 size-1 shrink-0 rounded-full bg-primary/60" />
+                    <span>{line}</span>
+                  </p>
+                ))}
+                {rec.explanation.caveat ? (
+                  <p className="flex gap-2 text-xs leading-5 text-chart-3">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                    <span>{rec.explanation.caveat}</span>
+                  </p>
+                ) : null}
+                {!fallback && rec.diversityPenalty !== null ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    MMR similarity penalty at selection: {rec.diversityPenalty.toFixed(3)}
+                  </p>
+                ) : null}
+              </div>
+            </Disclosure>
           ) : null}
-
-          <div className="mt-4 space-y-1.5 border-t border-border/60 pt-3">
-            {rec.explanation.modelDerived ? (
-              <p className="flex gap-2 text-xs leading-5 text-foreground/90">
-                <Brain className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                <span>{rec.explanation.modelDerived}</span>
-              </p>
-            ) : null}
-            {rec.explanation.evidence.map((line) => (
-              <p key={line} className="flex gap-2 text-xs leading-5 text-muted-foreground">
-                <span className="mt-1.5 size-1 shrink-0 rounded-full bg-primary/60" />
-                <span>{line}</span>
-              </p>
-            ))}
-            {rec.explanation.caveat ? (
-              <p className="flex gap-2 text-xs leading-5 text-chart-3">
-                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                <span>{rec.explanation.caveat}</span>
-              </p>
-            ) : null}
-            {!fallback && rec.diversityPenalty !== null ? (
-              <p className="text-[11px] text-muted-foreground">
-                MMR similarity penalty at selection: {rec.diversityPenalty.toFixed(3)}
-              </p>
-            ) : null}
-          </div>
         </div>
       </div>
     </motion.article>

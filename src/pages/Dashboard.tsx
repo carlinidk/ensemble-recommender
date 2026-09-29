@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { MoviePoster } from "@/components/MoviePoster";
 import { useMl } from "@/components/MlProvider";
+import { Disclosure } from "@/components/Disclosure";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
@@ -16,7 +17,6 @@ import {
   Brain,
   Film,
   Loader2,
-  Shuffle,
   Sparkles,
   Star,
   TrendingUp,
@@ -78,7 +78,7 @@ export default function Dashboard() {
   return (
     <AppShell
       title={`Welcome back${user?.name ? `, ${user.name}` : ""}`}
-      description="Your ratings, your persona match and the state of the stacking ensemble — all in one place."
+      description="Your films, your taste signals and your next watches — all in one place."
       actions={
         <Button asChild className="gap-2">
           <Link to="/recommendations">
@@ -150,7 +150,7 @@ export default function Dashboard() {
               to="/analytics"
               icon={<Brain className="size-4" />}
               title={ml.hasTrainedModels ? "Inspect the ensemble" : "Train the ensemble"}
-              body="Six standalone models, seven stacking configurations, out-of-fold meta features."
+              body="Train the model behind your picks, or inspect how it performed."
               cta={ml.hasTrainedModels ? "Open analytics" : "Run experiment"}
             />
             <ActionCard
@@ -222,18 +222,16 @@ export default function Dashboard() {
               )}
 
               <p className="mt-4 border-t border-border/60 pt-3 text-[11px] leading-4 text-muted-foreground">
-                Preview uses {DEFAULT_RECOMMEND_CONFIG.mode} mode with affinity weight{" "}
-                {DEFAULT_RECOMMEND_CONFIG.affinityWeight.toFixed(2)}. Adjust ranking in the Top-K page.
+                Preview uses {DEFAULT_RECOMMEND_CONFIG.mode} mode. Adjust ranking in the Top-K page.
               </p>
             </div>
 
             <aside className="flex flex-col gap-4">
-              <div className="rounded-xl border border-border/70 bg-card/50 p-5">
-                <div className="flex items-center gap-2 text-primary">
-                  <Shuffle className="size-4" />
-                  <h2 className="text-sm font-semibold text-foreground">How the pipeline runs</h2>
-                </div>
-                <ol className="mt-3 space-y-2.5 text-xs text-muted-foreground">
+              <Disclosure
+                title="How the pipeline runs"
+                hint="From your ratings to the ranked list — hidden by default."
+              >
+                <ol className="space-y-2.5 text-xs text-muted-foreground">
                   {[
                     "Your ratings are stored in Convex and form the taste profile.",
                     "A cosine match maps you onto the closest MovieLens 100K user.",
@@ -249,7 +247,7 @@ export default function Dashboard() {
                     </li>
                   ))}
                 </ol>
-              </div>
+              </Disclosure>
 
               {profileView && profileView.genreAffinity.length > 0 ? (
                 <div className="rounded-xl border border-border/70 bg-card/50 p-5">
